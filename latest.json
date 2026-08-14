@@ -1,8 +1,0 @@
-{
-  "version": "0.0.1",
-  "tag": "v0.0.1",
-  "apkUrl": "https://github.com/MS-Jahan/kathasync-mobile-releases/releases/download/v0.0.1/app-release.apk",
-  "notes": "Smoke-test release to validate the publish workflow.",
-  "publishedAt": "2026-08-14T03:15:30Z",
-  "sha256": "e3e2356f72c5fbb238ffe441577fa944e016137782c7439889fa11ac26d38c2b"
-}
