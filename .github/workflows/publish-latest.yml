@@ -1,0 +1,145 @@
+name: Publish latest release metadata
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download first APK asset
+        id: apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.release.tag_name }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          urls=$(jq -r '.assets[] | select(.name|test("\\.apk$")) | .browser_download_url' <<< '${{ toJson(github.event.release.assets) }}')
+          if [ -z "$urls" ]; then
+            echo "No APK asset found in release $tag" >&2
+            exit 1
+          fi
+
+          apk_url=$(echo "$urls" | head -n 1)
+          echo "apk_url=$apk_url" >> "$GITHUB_OUTPUT"
+          echo "apk_name=$(basename "$apk_url")" >> "$GITHUB_OUTPUT"
+
+          curl -fL --retry 3 --retry-delay 2 -o release.apk "$apk_url"
+
+      - name: Compute APK sha256
+        id: sha256
+        run: |
+          set -euo pipefail
+          sha=$(sha256sum release.apk | awk '{print $1}')
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Write latest.json
+        id: latest
+        env:
+          TAG: ${{ steps.apk.outputs.tag }}
+          APK_URL: ${{ steps.apk.outputs.apk_url }}
+          SHA256: ${{ steps.sha256.outputs.sha256 }}
+          BODY: ${{ github.event.release.body }}
+          PUBLISHED_AT: ${{ github.event.release.published_at }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          jq -n \
+            --arg version "$version" \
+            --arg tag "$TAG" \
+            --arg apkUrl "$APK_URL" \
+            --arg notes "$BODY" \
+            --arg publishedAt "$PUBLISHED_AT" \
+            --arg sha256 "$SHA256" \
+            '{
+              version: $version,
+              tag: $tag,
+              apkUrl: $apkUrl,
+              notes: $notes,
+              publishedAt: $publishedAt,
+              sha256: $sha256
+            }' > latest.json
+          cat latest.json
+
+      - name: Update README latest-version marker
+        env:
+          TAG: ${{ steps.apk.outputs.tag }}
+          APK_URL: ${{ steps.apk.outputs.apk_url }}
+        run: |
+          set -euo pipefail
+          start='<!-- LATEST_VERSION_START -->'
+          end='<!-- LATEST_VERSION_END -->'
+          version="${TAG#v}"
+          apk_name=$(basename "$APK_URL")
+
+          if [ ! -f README.md ]; then
+            printf '%s\n' \
+              '# KathaSync Mobile Releases' \
+              '' \
+              'Voice notes + transcription companion for KathaSync.' \
+              '' \
+              "$start" \
+              '' \
+              "Latest: $TAG" \
+              '' \
+              "[$apk_name]($APK_URL)" \
+              '' \
+              "$end" \
+              > README.md
+            exit 0
+          fi
+
+          awk -v start="$start" -v end="$end" -v tag="$TAG" -v apk_name="$apk_name" -v apk_url="$APK_URL" '
+            BEGIN{inblock=0; printed=0}
+            {
+              if ($0 ~ start) {
+                print start;
+                print "";
+                print "Latest: " tag;
+                print "";
+                print "[" apk_name "](" apk_url ")";
+                print "";
+                printed=1;
+                inblock=1;
+                next;
+              }
+              if (inblock && $0 ~ end) {
+                print end;
+                inblock=0;
+                next;
+              }
+              if (!inblock) print;
+            }
+            END{
+              if (!printed) {
+                print "";
+                print start;
+                print "";
+                print "Latest: " tag;
+                print "";
+                print "[" apk_name "](" apk_url ")";
+                print "";
+                print end;
+              }
+            }
+          ' README.md > README.md.tmp && mv README.md.tmp README.md
+
+      - name: Commit latest.json and README.md
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '[skip ci] Release ${{ steps.apk.outputs.tag }}'
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          file_pattern: latest.json README.md
+          commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
