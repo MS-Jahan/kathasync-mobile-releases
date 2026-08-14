@@ -10,6 +10,9 @@ permissions:
 jobs:
   publish-latest:
     runs-on: ubuntu-latest
+    # This job only downloads the APK asset and commits metadata — it never
+    # compiles the app. 20 min is a generous ceiling; expected runtime ~2 min.
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
