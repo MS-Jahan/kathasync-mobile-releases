@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "tag": "v1.0.0",
+  "apkUrl": "https://github.com/MS-Jahan/kathasync-mobile-releases/releases/download/v1.0.0/app-release.apk",
+  "notes": "First public release of the KathaSync Flutter app.\n\n- Voice notes + transcription with KathaSync overlay\n- APK SHA256: 0eeb6680d15593cc0560eb4900e1b0b5d87f371c6fbcd2d8937f7509773a9662",
+  "publishedAt": "2026-08-14T03:49:48Z",
+  "sha256": "0eeb6680d15593cc0560eb4900e1b0b5d87f371c6fbcd2d8937f7509773a9662"
+}
