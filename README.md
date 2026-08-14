@@ -4,7 +4,9 @@ Voice notes + transcription companion for KathaSync.
 
 <!-- LATEST_VERSION_START -->
 
-Latest: vX.Y.Z
+Latest: v0.0.1
+
+[app-release.apk](https://github.com/MS-Jahan/kathasync-mobile-releases/releases/download/v0.0.1/app-release.apk)
 
 <!-- LATEST_VERSION_END -->
 
