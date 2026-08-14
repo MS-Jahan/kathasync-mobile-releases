@@ -28,7 +28,7 @@ jobs:
           tag="${{ github.event.release.tag_name }}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-          urls=$(jq -r '.assets[] | select(.name|test("\\.apk$")) | .browser_download_url' <<< '${{ toJson(github.event.release.assets) }}')
+          urls=$(jq -r '.[] | select(.name|test("\\.apk$")) | .browser_download_url' <<< '${{ toJson(github.event.release.assets) }}')
           if [ -z "$urls" ]; then
             echo "No APK asset found in release $tag" >&2
             exit 1
